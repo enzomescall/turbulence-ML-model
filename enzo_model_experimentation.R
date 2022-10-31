@@ -12,18 +12,18 @@ clean = data.train %>%
 # experimenting for model 1
 poly_mse_cv = c()
 for (degree in 1:10) {
-  degree_i = glm(log(R_moment_1) ~ Re + Fr + poly(St, degree) + log(St), data = clean)
-  poly_mse_cv[degree] = cv_mse(degree_i)
+  degree_i = glm(R_moment_1 ~ Re + Fr + poly(St, degree), data = clean)
+  poly_mse_cv[degree] = cv.glm(degree_i, data = clean)$delta[1]
 }
 min(poly_mse_cv)
 which.min(poly_mse_cv)
 
 spline_mse = c(99,99,99)
-for (df in 3:5) {
-  degree_i = glm(R_moment_1 ~ Re + Fr + bs(St, df = df, degree = 5), data = clean)
-  spline_mse[df] = cv_mse(degree_i)
+for (df in 1:10) {
+  degree_i = glm(R_moment_1 ~ Re + Fr + St*Re + bs(St, df = df), data = clean)
+  spline_mse[df] = cv.glm(degree_i, data = clean)$delta[1]
 }
-min(spline_mse) # 0.0002905166 for degree = 4, df = 4
+min(spline_mse) # 0.000261363 current best, simple lm
 which.min(spline_mse)
 
 predictive_model = function(test_St, test_Re, test_Fr) {
