@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r libraries, echo = FALSE, results = FALSE, message = FALSE}
 library(tidyverse)
+library(splines)
 ```
 
 ```{r data}
@@ -59,20 +60,11 @@ hist(log(data.train$R_moment_4))
 ```
 
 ```{r}
+library(boot)
 
-
-errors = rep(NA, 20)
-for (i in 3:20) {
-  lm = lm(nox ~ bs(dis, df = i), data = clean)
-  errors[i] = sum(lm$residuals^2)
-}
-
-df = data.frame(
-  DF = 3:20,
-  RSS = errors[-c(1,2)]
-)
-
-plot(df)
+clean = data.train %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
 
 cv_mse = function(input_model, k = 5, iter = 25, data = clean) {
     sum_mse = 0
@@ -82,6 +74,39 @@ cv_mse = function(input_model, k = 5, iter = 25, data = clean) {
     avg_mse = sum_mse/iter
     return(avg_mse)
 }
+
+errors = rep(NA, 10)
+for (i in 3:10) {
+  lm = lm(R_moment_1 ~ bs(St, df = i) + Re + Fr, data = clean)
+  errors[i] = sum(lm$residuals^2)
+}
+
+df = data.frame(
+  DF = 3:10,
+  RSS = errors[-c(1,2)]
+)
+
+plot(df)
+
+
+errors = matrix(NA, nrow=10, ncol=10)
+for (j in 1:10) {
+  for (i in j:10) {
+    lm = glm(R_moment_1 ~ bs(St, df = i, degree = j)*Re + Fr, data = clean)
+    errors[[i,j]] = suppressWarnings(cv.glm(data = clean, glmfit = lm)$delta[1])
+  }
+}
+errors
+
+errors = rep(NA, 10)
+for (i in 2:10) {
+  lm = glm(R_moment_1 ~ bs(St, df = i, degree = 2)*Re + Fr, data = clean)
+  errors[i] = suppressWarnings(cv.glm(clean, lm)$delta[1])
+}
+plot(2:10, errors[-1], type="b", xlab="df", ylab="CV error", main = 'CV Error vs Degrees of Freedom with Degree=2 Splines')
+abline(v = which.min(errors), col = "red")
+
+
 ```
 
 After this, we created a function that would resemble our final product and take in a tuple of St, Re, and Fr and then return the four predicted moments. We reserved the global variable names `model_mX` for this final function.
