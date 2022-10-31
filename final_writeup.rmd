@@ -25,6 +25,7 @@ data.test = read.csv("data-test.csv")
 ## Introduction
 
 
+
 ## Methodology
 
 We wanted a method to quickly perform cross validation on a candidate model and estimate its test MSE, so we created a general function with that purpose.
