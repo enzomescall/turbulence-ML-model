@@ -1,0 +1,101 @@
+---
+title: "Predicting Turbulence Simulations - Experimenting Doc"
+author: "Martin Olarte"
+date: "2022-10-31"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Report should be no more than 4 pages
+```
+
+
+```{r libraries, echo = FALSE, results = FALSE, message = FALSE}
+library(tidyverse)
+```
+
+```{r data}
+data.train = read.csv("data-train.csv")
+data.test = read.csv("data-test.csv")
+```
+
+```{r}
+hist(data.train$St)
+
+hist(data.train$Re)
+
+hist(data.train$Fr)
+
+data.train %>%
+  ggplot(aes(x=St, y=R_moment_1, color = as.factor(Fr))) +
+  geom_point()
+
+data.train %>%
+  ggplot(aes(x=log(St), y=log(R_moment_1), color = as.factor(Fr))) +
+  geom_point()
+
+data.train %>%
+  ggplot(aes(x=St, y=R_moment_1, color = as.factor(Re))) +
+  geom_point()
+
+data.train %>%
+  ggplot(aes(x=log(St), y=log(R_moment_1), color = as.factor(Re))) +
+  geom_point()
+
+
+hist(data.train$R_moment_1)
+hist(log(data.train$R_moment_1))
+
+hist(data.train$R_moment_2)
+hist(log(data.train$R_moment_2))
+
+hist(data.train$R_moment_3)
+hist(log(data.train$R_moment_3))
+
+hist(data.train$R_moment_4)
+hist(log(data.train$R_moment_4))
+```
+
+```{r}
+
+
+errors = rep(NA, 20)
+for (i in 3:20) {
+  lm = lm(nox ~ bs(dis, df = i), data = clean)
+  errors[i] = sum(lm$residuals^2)
+}
+
+df = data.frame(
+  DF = 3:20,
+  RSS = errors[-c(1,2)]
+)
+
+plot(df)
+
+cv_mse = function(input_model, k = 5, iter = 25, data = clean) {
+    sum_mse = 0
+    for(i in 1:iter) {
+      sum_mse = sum_mse + cv.glm(input_model, data = clean, K = k)$delta[1]
+    }
+    avg_mse = sum_mse/iter
+    return(avg_mse)
+}
+```
+
+After this, we created a function that would resemble our final product and take in a tuple of St, Re, and Fr and then return the four predicted moments. We reserved the global variable names `model_mX` for this final function.
+
+```{r}
+# temp models
+predictive_model = function(test_St, test_Re, test_Fr) {
+  newdata = data.frame(list(St = test_St, Re = as.factor(test_Re), Fr = as.factor(test_Fr)))
+  
+  m1 = predict(model_m1, newdata =  newdata)
+  m2 = predict(model_m2, newdata =  newdata)
+  m3 = predict(model_m3, newdata =  newdata)
+  m4 = predict(model_m4, newdata =  newdata)
+  
+  return(c(m1, m2, m3, m4))
+}
+```
