@@ -9,37 +9,22 @@ clean = data.train %>%
   mutate(Fr = as.factor(Fr),
          Re = as.factor(Re))
 
-cv_mse = function(input_model, k = 5, iter = 25, data = clean) {
-  sum_mse = 0
-  for(i in 1:iter) {
-    sum_mse = sum_mse + cv.glm(input_model, data = clean, K = k)$delta[1]
-  }
-  avg_mse = sum_mse/iter
-  return(avg_mse)
-}
-
-
-
-
-
 # experimenting for model 1
-poly_mse = c()
+poly_mse_cv = c()
 for (degree in 1:10) {
   degree_i = glm(log(R_moment_1) ~ Re + Fr + poly(St, degree) + log(St), data = clean)
-  poly_mse[degree] = cv_mse(degree_i)
+  poly_mse_cv[degree] = cv_mse(degree_i)
 }
-min(poly_mse)
-which.min(poly_mse)
+min(poly_mse_cv)
+which.min(poly_mse_cv)
 
-spline_mse = c()
-for (df in 1:10) {
-  degree_i = glm(log(R_moment_1) ~ Re + Fr + bs(St, df = df, degree = 1), data = clean)
+spline_mse = c(99,99,99)
+for (df in 3:5) {
+  degree_i = glm(R_moment_1 ~ Re + Fr + bs(St, df = df, degree = 5), data = clean)
   spline_mse[df] = cv_mse(degree_i)
 }
-min(spline_mse)
+min(spline_mse) # 0.0002905166 for degree = 4, df = 4
 which.min(spline_mse)
-
-
 
 predictive_model = function(test_St, test_Re, test_Fr) {
   newdata = data.frame(list(St = test_St, Re = as.factor(test_Re), Fr = as.factor(test_Fr)))

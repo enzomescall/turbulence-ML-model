@@ -28,20 +28,6 @@ data.test = read.csv("data-test.csv")
 
 ## Methodology
 
-We wanted a method to quickly perform cross validation on a candidate model and estimate its test MSE, so we created a general function with that purpose.
-
-```{r}
-cv_mse = function(input_model, k = 5, iter = 25, data = clean) {
-    sum_mse = 0
-    for(i in 1:iter) {
-      sum_mse = sum_mse + cv.glm(input_model, data = clean, K = k)$delta[1]
-    }
-    avg_mse = sum_mse/iter
-    return(avg_mse)
-}
-```
-
-
 After this, we created a function that would resemble our final product and take in a tuple of St, Re, and Fr and then return the four predicted moments. We reserved the global variable names `model_mX` for this final function.
 
 ```{r}
@@ -58,6 +44,7 @@ predictive_model = function(test_St, test_Re, test_Fr) {
 }
 ```
 
+Since we have relatively few data points, n = 89, we decided to rely on LOOCV for our model selection process
 
 ## Results
 
