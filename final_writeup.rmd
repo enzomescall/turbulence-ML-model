@@ -27,15 +27,24 @@ data.test = read.csv("data-test.csv")
 
 ## Methodology
 
-We started off by creating a function that would take in a tuple of St, Re, and Fr and then return the four predicted moments. We did this using variable names that we were yet to define
+We wanted a method to quickly perform cross validation on a candidate model and estimate its test MSE, so we created a general function with that purpose.
+
+```{r}
+cv_mse = function(input_model, k = 5, iter = 25, data = clean) {
+    sum_mse = 0
+    for(i in 1:iter) {
+      sum_mse = sum_mse + cv.glm(input_model, data = clean, K = k)$delta[1]
+    }
+    avg_mse = sum_mse/iter
+    return(avg_mse)
+}
+```
+
+
+After this, we created a function that would resemble our final product and take in a tuple of St, Re, and Fr and then return the four predicted moments. We reserved the global variable names `model_mX` for this final function.
 
 ```{r}
 # temp models
-model_m1 = lm(R_moment_1 ~ Re + Fr + St, data = clean)
-model_m2 = lm(R_moment_2 ~ Re + Fr + St, data = clean)
-model_m3 = lm(R_moment_3 ~ Re + Fr + St, data = clean)
-model_m4 = lm(R_moment_4 ~ Re + Fr + St, data = clean)
-
 predictive_model = function(test_St, test_Re, test_Fr) {
   newdata = data.frame(list(St = test_St, Re = as.factor(test_Re), Fr = as.factor(test_Fr)))
   
