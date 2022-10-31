@@ -18,6 +18,8 @@ cv_mse = function(input_model, k = 5, iter = 25, data = clean) {
   return(avg_mse)
 }
 
+testing testing
+
 
 
 
