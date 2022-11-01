@@ -44,27 +44,32 @@ for (j in 1:10) {
 }
 errors
 
-rm2_over %>%
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
-  geom_smooth(method = "lm", formula = "y ~ bs(x, df = 4, degree = 2)") +
-  geom_point()
-
-under_100 %>%
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
-    geom_point()
-
 rm2_over = data.train %>%
-  filter(Fr == 0.052 & Re == 90) %>%
+  filter(Re == 90) %>%
   mutate(Fr = as.factor(Fr),
          Re = as.factor(Re))
 
 rm2_under = data.train %>%
-  filter(Fr != 0.052 | Re != 90) %>%
+  filter(Re != 90) %>%
   mutate(Fr = as.factor(Fr),
          Re = as.factor(Re))
 
-lm = glm(R_moment_2 ~ log(St), data =  rm2_over)
+rm2_over %>%
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+rm2_under %>%
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+    geom_smooth(method = "lm", formula = "y ~ log(x)") +
+    geom_point()
+
+lm = glm(R_moment_2 ~ log(St)*Fr, data =  rm2_over)
 cv.glm(data = rm2_over, glmfit = lm)$delta[1]
+summary(lm)
+
+lm = glm(R_moment_2 ~ log(St)*Re + Fr, data = rm2_under)
+cv.glm(data = rm2_under, glmfit = lm)$delta[1]
 summary(lm)
 
 predictive_model = function(test_St, test_Re, test_Fr) {
