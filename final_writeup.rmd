@@ -30,12 +30,37 @@ data.test = read.csv("data-test.csv")
 
 ## Methodology
 
+The first noticable thing about the data is that both Fr and Re only have three levels and 
+
 ```{r}
 clean = data.train %>%
   mutate(Fr = as.factor(Fr),
          Re = as.factor(Re))
 ```
 
+Since we have relatively few data points, n = 89, we decided to rely on LOOCV for our model selection process. We also vetted multiple different cost functions, from MSE to root MSE to root MSlogE to MAE. The main reason for this was that MSE was over-inflating the negative of outliers and making some models seem as if they were performing worse than expected. Root MSE, or rMSE, and MAE helped to taper this by producing more interpretable values that were easier to visualize whilst still preserving the minimum and maximum of the MSE function. One step futher was looking at root MSlogE, or RMSLE, which heavily scaled MSE and allowed us to compare the performance of one model to another across reponse variables. For example if the 1st moment's model has an MSE of 0.1 and the 2nd moment's model has an MSE of 0.2, one would be inclined to assume the first model is superior, but since the values of the second moment tend to be orders of magnitude higher the latter model is actually performing a much more impressive estimation. This relative difference is much better captured in RMSLE
+
+The order we tackled this problem in was to first estimate the 1st moment, and then work our way up. To create a profecient model we estimated the test error performance of various different degrees of polynomials and splines with various combinations of degrees of freedom. An example is shown in the graph below of the process looking at the difference in LOOCV MAE between different numbers of knots for a quadratic spline model.
+
+```{r}
+RMSLE = function(y_true, y_pred) sqrt(mean((log(y_true + 1) - log(y_pred + 1))^2))
+MAE = function(y_true, y_pred) mean(abs(y_true - y_pred))
+
+errors = rep(NA, 10)
+for (i in 2:10) {
+  lm = glm(R_moment_1 ~ bs(St, df = i, degree = 2)*Re + Fr, data = clean)
+  errors[i] = suppressWarnings(cv.glm(clean, lm, cost = MAE)$delta[1])
+}
+plot(2:10, errors[-1], type="b", xlab="DF", ylab="Mean Absolute error", 
+     main = 'LOOCV MAE vs Degrees of Freedom with Degree = 2 Splines')
+abline(v = which.min(errors), col = "red")
+```
+Notably, the simplest model has won out. The next step in our process was to identify possible interaction terms. We started with a very complex model with a complete set of interactions terms, which included triple interaction terms across the three predictors, and included log, square root, and inverse terms. We then performed backwards model selection using LOOCV MSE and MAE to select predictors and both metric agreed on the following models for both the first and second moments.
+
+```{r}
+model_m1 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
+model_m2 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
+```
 
 After this, we created a function that would resemble our final product and take in a tuple of St, Re, and Fr and then return the four predicted moments. We reserved the global variable names `model_mX` for this final function.
 
@@ -54,22 +79,6 @@ predictive_model = function(test_St, test_Re, test_Fr) {
   return(c(m1, m2, m3, m4))
 }
 ```
-
-Since we have relatively few data points, n = 89, we decided to rely on LOOCV for our model selection process
-
-
-
-```{r}
-errors = rep(NA, 10)
-for (i in 2:10) {
-  lm = glm(R_moment_1 ~ bs(St, df = i, degree = 2)*Re + Fr, data = clean)
-  errors[i] = suppressWarnings(cv.glm(clean, lm)$delta[1])
-}
-plot(2:10, errors[-1], type="b", xlab="df", ylab="CV error", 
-     main = 'CV Error vs Degrees of Freedom with Degree=2 Splines')
-abline(v = which.min(errors), col = "red")
-```
-
 
 ## Results
 

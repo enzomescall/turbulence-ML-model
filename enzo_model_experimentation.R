@@ -17,7 +17,7 @@ for (degree in 1:10) {
 }
 min(poly_mse_cv)
 which.min(poly_mse_cv)
-# 0.0001079192 current best, R_moment_1 ~ Fr + Re*poly(St, 2)
+# 6.255864e-05 current best, R_moment_1 ~ log(St)*Fr*Re + St*Re*Fr, data = clean
 
 # experimenting for model 2
 errors = matrix(NA, nrow=10, ncol=10)
@@ -29,12 +29,6 @@ for (j in 1:10) {
 }
 errors
 
-under_100 = clean %>%
-  filter(R_moment_2 < 100)
-
-over_100 = clean %>%
-  filter(R_moment_2 >= 100)
-
 errors = matrix(NA, nrow=10, ncol=10)
 for (j in 1:10) {
   for (i in j:10) {
@@ -43,6 +37,10 @@ for (j in 1:10) {
   }
 }
 errors
+
+RMSLE = function(y_true, y_pred) sqrt(mean((log(y_true + 1) - log(y_pred + 1))^2))
+MSE = function(y_true, y_pred) mean((y_true - y_pred)^2)
+MAE = function(y_true, y_pred) mean(abs(y_true - y_pred))
 
 rm2_over = data.train %>%
   filter(Re == 90) %>%
@@ -64,21 +62,20 @@ rm2_under %>%
     geom_smooth(method = "lm", formula = "y ~ log(x)") +
     geom_point()
 
-lm = glm(R_moment_2 ~ log(St)*Fr, data =  rm2_over)
-cv.glm(data = rm2_over, glmfit = lm)$delta[1]
-summary(lm)
+lm_over = glm(R_moment_2 ~ log(St)*Fr + St*Fr, data =  rm2_over)
+cv.glm(data = rm2_over, glmfit = lm_over, cost = MSE)$delta[1]
 
-lm = glm(R_moment_2 ~ log(St)*Re + Fr, data = rm2_under)
-cv.glm(data = rm2_under, glmfit = lm)$delta[1]
-summary(lm)
+lm_under = glm(R_moment_2 ~ log(St)*Re*Fr, data = rm2_under)
+cv.glm(data = rm2_under, glmfit = lm_under, cost = MSE)$delta[1]
 
-predictive_model = function(test_St, test_Re, test_Fr) {
-  newdata = data.frame(list(St = test_St, Re = as.factor(test_Re), Fr = as.factor(test_Fr)))
-  
-  m1 = predict(model_m1, newdata =  newdata) 
-  m2 = predict(model_m2, newdata =  newdata)
-  m3 = predict(model_m3, newdata =  newdata) 
-  m4 = predict(model_m4, newdata =  newdata) 
-  
-  return(m1)
-}
+SE = cv.glm(data = rm2_over, glmfit = lm_over)$delta[1]*nrow(rm2_over) + cv.glm(data = rm2_under, glmfit = lm_under)$delta[1]*nrow(rm2_under)
+SE/(nrow(clean))
+
+# messing with hierarchy principle
+lm = glm(R_moment_2 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
+cv.glm(data = clean, glmfit = lm, cost = MSE)$delta[1]
+
+###
+### Tryig for moment 3
+###
+
