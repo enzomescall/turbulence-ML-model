@@ -12,19 +12,60 @@ clean = data.train %>%
 # experimenting for model 1
 poly_mse_cv = c()
 for (degree in 1:10) {
-  degree_i = glm(R_moment_1 ~ Re + Fr + poly(St, degree), data = clean)
+  degree_i = glm(R_moment_1 ~ Re + Fr + Re*poly(St, degree), data = clean)
   poly_mse_cv[degree] = cv.glm(degree_i, data = clean)$delta[1]
 }
 min(poly_mse_cv)
 which.min(poly_mse_cv)
+# 0.0001079192 current best, R_moment_1 ~ Fr + Re*poly(St, 2)
 
-spline_mse = c(99,99,99)
-for (df in 1:10) {
-  degree_i = glm(R_moment_1 ~ Re + Fr + St*Re + bs(St, df = df), data = clean)
-  spline_mse[df] = cv.glm(degree_i, data = clean)$delta[1]
+# experimenting for model 2
+errors = matrix(NA, nrow=10, ncol=10)
+for (j in 1:10) {
+  for (i in j:10) {
+    lm = glm(R_moment_2 ~ bs(St, df = i, degree = j)*Re + Fr, data = clean)
+    errors[[i,j]] = suppressWarnings(cv.glm(data = clean, glmfit = lm)$delta[1])
+  }
 }
-min(spline_mse) # 0.000261363 current best, simple lm
-which.min(spline_mse)
+errors
+
+under_100 = clean %>%
+  filter(R_moment_2 < 100)
+
+over_100 = clean %>%
+  filter(R_moment_2 >= 100)
+
+errors = matrix(NA, nrow=10, ncol=10)
+for (j in 1:10) {
+  for (i in j:10) {
+    lm = glm(R_moment_2 ~ log(St)*Re*Fr, data =  clean)
+    errors[[i,j]] = suppressWarnings(cv.glm(data = clean, glmfit = lm)$delta[1])
+  }
+}
+errors
+
+rm2_over %>%
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+  geom_smooth(method = "lm", formula = "y ~ bs(x, df = 4, degree = 2)") +
+  geom_point()
+
+under_100 %>%
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+    geom_point()
+
+rm2_over = data.train %>%
+  filter(Fr == 0.052 & Re == 90) %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+
+rm2_under = data.train %>%
+  filter(Fr != 0.052 | Re != 90) %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+
+lm = glm(R_moment_2 ~ log(St), data =  rm2_over)
+cv.glm(data = rm2_over, glmfit = lm)$delta[1]
+summary(lm)
 
 predictive_model = function(test_St, test_Re, test_Fr) {
   newdata = data.frame(list(St = test_St, Re = as.factor(test_Re), Fr = as.factor(test_Fr)))
