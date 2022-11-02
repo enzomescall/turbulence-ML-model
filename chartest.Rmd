@@ -15,6 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r libraries, echo = FALSE, results = FALSE, message = FALSE}
 library(tidyverse)
 library(ggplot2)
+library(splines)
+library(gam)
 ```
 
 ```{r data}
@@ -94,6 +96,206 @@ summary(lin_model)
 
 par(mfrow = c(2,2))
 plot(lin_model)
+```
+## MOMENT 2
+
+
+```{r}
+poly_mse_cv = c()
+for (degree in 1:10) {
+  degree_i = glm(R_moment_1 ~ Re + Fr + poly(St, degree), data = data.train)
+  poly_mse_cv[degree] = cv.glm(degree_i, data = clean)$delta[1]
+}
+min(poly_mse_cv)
+```
+
+
+```{r}
+poly_mse_cv = c()
+for (degree in 1:10) {
+  degree_i = glm(R_moment_1 ~ Re + Fr + poly(St, degree), data = clean)
+  poly_mse_cv[degree] = cv.glm(degree_i, data = clean)$delta[1]
+}
+min(poly_mse_cv)
+```
+
+```{r}
+ggplot(data = clean, aes(x= St, y = R_moment_2, color = Fr)) +
+  geom_point()
+ggplot(data = clean, aes(x= Fr, y = R_moment_2, color = Re)) +
+  geom_point()
+ggplot(data = clean, aes(x= Re, y = R_moment_2, color = St)) +
+  geom_point()
+```
+
+
+```{r}
+poly_mse_cv = c()
+for (degree in 1:10) {
+  degree_i = glm(R_moment_2 ~ Re + Fr + poly(St, degree), data = clean)
+  poly_mse_cv[degree] = cv.glm(degree_i, data = clean)$delta[1]
+}
+min(poly_mse_cv)
+```
+
+``{r}
+gam.m1 <- gam(R_moment_2 ~ s(St, 5) + Re+ Fr, data = clean)
+preds1 <- predict(gam.m1, newdata = clean)
+
+gam.m2 <- gam(R_moment_2 ~ ns(St, 5) + Re+ Fr, data = clean)
+gam.m3 <- gam(R_moment_2 ~ s(St, 3)  + Re+ Fr, data = clean)
+anova(gam.m1, gam.m2, gam.m3, test = "F")
+``
+
+
+
+```{r}
+lin_model2 <- glm(R_moment_2 ~ Re + St + Fr, data = clean)
+cv.glm(lin_model2, data = clean)$delta[1]
+lin_model3 <- glm(R_moment_2 ~ Re + St + St^2 +  Fr, data = clean)
+cv.glm(lin_model2, data = clean)$delta[1]
+lin_model4 <- glm(R_moment_2 ~ St, data = clean)
+cv.glm(lin_model4, data = clean)$delta[1]
+```
+
+
+
+```{r}
+m2glm1 = glm(R_moment_2 ~ Re + Fr + St + St*Fr +  Re*St*Fr, data = clean)
+cv.glm(m2glm1, data = clean)$delta[1] ### 10840
+```
+
+## 360 MSE MODEL vvv
+
+```{r}
+m2glm5 = glm(R_moment_2 ~ Re + Fr + St + St*Fr +  Re*St*Fr +Re*log(St)*Fr, data = clean)
+cv.glm(m2glm5, data = clean)$delta[1] ## MSE = 359.2733
+
+summary(m2glm5)
+```
+
+This model does not work for moments 3 or 4
+
+```{r}
+m2glm10 = glm(R_moment_2 ~ Re + Fr + St + St*Fr +  Re*St*Fr + Re*log(St)*Fr, data = clean)
+cv.glm(m2glm5, data = clean)$delta[1] ## MSE = 359.2733
+
+summary(m2glm10)
+```
+
+```{r}
+m2glm7 = glm(R_moment_2 ~ Re + Fr + St + St:log(St):Fr, data = clean)
+cv.glm(m2glm7, data = clean)$delta[1] 
+```
+
+
+```{r doesntwork}
+m2glm5 = glm(R_moment_2 ~ Re + Fr + St + Re90:Fr0.052:log(St), data = clean) ##invalid
+```
+
+
+```{r}
+full.model <- glm(R_moment_2 ~ Re + Fr + St + St*Fr + St*Re + Re*Fr + log(as.numeric(Re))*Fr + Re*St*Fr, data = clean)
+
+step.model <- stepAIC(full.model, direction = "both", 
+                      trace = FALSE)
+cv.glm(step.model, data = clean)$delta[1]
+summary(step.model)
+```
+
+
+
+```{r}
+poly_mse_cv = c()
+for (degree in 1:10) {
+  degree_i = glm(R_moment_5 ~ Re + Fr + poly(St, degree), data = clean)
+  poly_mse_cv[degree] = cv.glm(degree_i, data = clean)$delta[1]
+}
+min(poly_mse_cv)
+```
+
+## Moment 3
+
+```{r}
+ggplot(data = clean, aes(x= St, y = R_moment_4, color = Fr)) +
+  geom_point()
+ggplot(data = clean, aes(x= Fr, y = R_moment_3, color = Re)) +
+  geom_point()
+ggplot(data = clean, aes(x= Re, y = R_moment_3, color = St)) +
+  geom_point()
+```
+
+```{r}
+full.model3 <- glm(R_moment_3 ~ Re + Fr + St + St*Fr + St*Re + Re*Fr +Re*log(St)*Fr, data = clean)
+cv.glm(step.model3, data = clean)$delta[1] 
+```
+10840.18 same with/without the interaction without the log, and with adding up to exponential 3 of each alone
+
+
+```{r}
+rm2_over = data.train %>%
+  filter(Fr == 0.052 & Re == 90) %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+
+rm2_under = data.train %>%
+  filter(Fr != 0.052 | Re != 90) %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+```
+
+```{r}
+rm2_under_glm = glm(R_moment_3 ~ Re + Fr + St, data = rm2_under)
+cv.glm(rm2_under_glm, data = rm2_under)$delta[1]
+```
+```{r}
+rm2_under_glm = glm(R_moment_3 ~ Re + Fr + St, data = rm2_over)
+cv.glm(rm2_under_glm, data = rm2_over)$delta[1]
+```
+
+```{r}
+re_over = data.train %>%
+  filter(Re == 90) %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+
+re_under = data.train %>%
+  filter(Re != 90) %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+```
+
+```{r}
+re_under_glm2 = glm(R_moment_2 ~ Fr + Re + St + St^2 + St^3  + Re*log(St)*Fr + Re*St^3*Fr, 
+                   data = re_under) ##looks liek a cube but doesnt change shit
+cv.glm(re_under_glm2, data = re_under)$delta[1]
+
+```
+
+```{r}
+rm2_over %>%
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+rm2_under %>%
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+    geom_smooth(method = "lm", formula = "y ~ log(x)") +
+    geom_point()
+```
+
+
+```{r}
+ggplot(data = re_under, aes(St, R_moment_2, color = Fr)) + geom_point()
+ggplot(data = re_over, aes(St, R_moment_2, color = Fr)) + geom_point()
+ggplot(data = clean, aes(Re, R_moment_3, color = Fr)) + geom_point()
+```
+
+
+```{r}
+re_over_glm2 = glm(R_moment_2 ~ Fr + St + St*Fr + log(St)*Fr, 
+                   data = re_over)
+suppressWarnings(cv.glm(re_over_glm2, data = re_over)$delta[1])
 ```
 
 
