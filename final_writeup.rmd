@@ -73,23 +73,23 @@ re_under = data.train %>%
 
 par(mfrow=c(2,2))
 
-clean %>%
-  ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr)) +
-  geom_smooth(method = "lm", formula = "y ~ log(x)") +
-  geom_point()
-clean %>%
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+  ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr), data = clean) +
+  labs(title = "St factored by Re and Fr vs. 1st Moment", x = "St", y = "1st Moment") + 
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-
-rm2_over %>%
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = clean) +
+  labs(title = "St factored by Re and Fr vs. 2nd Moment", x = "St", y = "2nd Moment") + 
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-rm2_under %>%
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr)) +
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_over) +
+  labs(title = "St factored by Fr vs. 2nd Moment", subtitle = "For Re = 90", x = "St", y = "2nd Moment") + 
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_under) +
+  labs(title = "St factored by Fr vs. 2nd Moment", subtitle = "For Re > 90", x = "St", y = "2nd Moment") + 
     geom_smooth(method = "lm", formula = "y ~ log(x)") +
     geom_point()
 ```

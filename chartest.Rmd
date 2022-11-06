@@ -266,9 +266,36 @@ re_under = data.train %>%
 ```
 
 ```{r}
-re_under_glm2 = glm(R_moment_2 ~ Fr + Re + St + St^2 + St^3  + Re*log(St)*Fr + Re*St^3*Fr, 
-                   data = re_under) ##looks liek a cube but doesnt change shit
-cv.glm(re_under_glm2, data = re_under)$delta[1]
+re_glm2 = glm(R_moment_3 ~ Fr + Re + St + St^2 + St^3 + St^4  + Re*log(St)*Fr, 
+                   data = clean) ##looks liek a cube but doesnt change shit
+suppressWarnings(cv.glm(re_glm2, data = clean)$delta[1])
+
+re_glm2 = glm(R_moment_3 ~ Fr + Re  + Re*log(St)*Fr, 
+                   data = clean) 
+suppressWarnings(cv.glm(re_glm2, data = clean)$delta[1])
+
+re_glm2 = glm(R_moment_3 ~ Fr + Re  + Re*log(St)*Fr, 
+                   data = clean)
+suppressWarnings(cv.glm(re_glm2, data = clean)$delta[1])
+
+
+```
+
+
+
+```{r}
+
+for (i in 2:10) {
+  lm = glm(R_moment_3 ~ bs(St, df = i, degree = 2)*Re*Fr + Fr + Re + St + St^2 + St^3 + St^4  + Re*log(St)*Fr, data = clean)
+  errors[i] = suppressWarnings(cv.glm(clean, lm)$delta[1])
+}
+plot(2:10, errors[-1], type="b", xlab="df", ylab="CV error", main = 'CV Error vs Degrees of Freedom with Degree=2 Splines')
+abline(v = which.min(errors), col = "red")
+
+spline_with_truple = glm(R_moment_3 ~ bs(St, df = 1, degree = 2)*Re*Fr + Fr + Re + St + St^2 + St^3 + St^4  + Re*log(St)*Fr + Re*St^3*Fr, data = clean)
+cv.glm(spline_with_truple, data = clean)$delta[1]
+
+##unhelpful
 
 ```
 
@@ -286,9 +313,9 @@ rm2_under %>%
 
 
 ```{r}
-ggplot(data = re_under, aes(St, R_moment_2, color = Fr)) + geom_point()
-ggplot(data = re_over, aes(St, R_moment_2, color = Fr)) + geom_point()
-ggplot(data = clean, aes(Re, R_moment_3, color = Fr)) + geom_point()
+ggplot(data = re_under, aes(St, R_moment_3, color = Fr)) + labs(title = "2nd Moment Re = 90") + geom_point()
+ggplot(data = re_over, aes(St, R_moment_2, color = Fr)) +  labs(title = "2nd Moment Re > 90") + geom_point()
+ggplot(data = clean, aes(Re, R_moment_3, color = Fr)) + labs(title = "3rd Moment Fr, Re Distribution") +geom_point()
 ```
 
 
