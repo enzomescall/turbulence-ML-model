@@ -30,7 +30,7 @@ data.test = read.csv("data-test.csv")
 
 ## Methodology
 
-The first noticable thing about the data is that both Fr and Re only have three levels and 
+The first noticeable thing about the data is that despite both Fr and Re being numerical predictors, they only have three levels each. Therefore, we decided to treat them as discrete predictors instead of interpolating or extrapolating values outside the given set for Re ({90, 224, 398}) and Fr ({0.052, 0.3, Inf}). This transformation was appropriate in the context of the problem since the testing data would also have values within the specified sets only.
 
 ```{r}
 clean = data.train %>%
@@ -38,9 +38,9 @@ clean = data.train %>%
          Re = as.factor(Re))
 ```
 
-Since we have relatively few data points, n = 89, we decided to rely on LOOCV for our model selection process. We also vetted multiple different cost functions, from MSE to root MSE to root MSlogE to MAE. The main reason for this was that MSE was over-inflating the negative of outliers and making some models seem as if they were performing worse than expected. Root MSE, or rMSE, and MAE helped to taper this by producing more interpretable values that were easier to visualize whilst still preserving the minimum and maximum of the MSE function. One step further was looking at root MSlogE, or RMSLE, which heavily scaled MSE and allowed us to compare the performance of one model to another across differently scaled response variables. For example if the 1st moment's model has an MSE of 0.1 and the 2nd moment's model has an MSE of 0.2, one would be inclined to assume the first model is superior, but since the values of the second moment tend to be orders of magnitude higher the latter model is actually performing a much more impressive estimation. This relative difference is much better captured in RMSLE
+Since we have relatively few data points, n = 89, we decided to rely on LOOCV for our model selection process. We also vetted multiple different cost functions, from MSE to root MSE to root MSlogE to MAE. The main reason for this was that MSE was over-inflating the negative of outliers and making some models seem as if they were performing worse than expected. Root MSE, or rMSE, and MAE helped to taper this by producing more interpretable values that were easier to visualize whilst still preserving the minimum and maximum of the MSE function. One step further was looking at root MSlogE, or RMSLE, which heavily scaled MSE and allowed us to compare the performance of one model to another across differently scaled response variables. For example if the 1st moment's model has an MSE of 0.1 and the 2nd moment's model has an MSE of 0.2, one would be inclined to assume the first model is superior, but since the values of the second moment tend to be orders of magnitude higher the latter model is actually performing a much more impressive estimation. This relative difference is much better captured in RMSLE.
 
-The order we tackled this problem in was to first estimate the 1st moment, and then work our way up. To create a proficient model we estimated the test error performance of various different degrees of polynomials and splines with various combinations of degrees of freedom. An example is shown in the graph below of the process looking at the difference in LOOCV MAE between different numbers of knots for a quadratic spline model.
+We tackled this problem sequentially, first focusing on models that provide information about the 1st moment, and moving forward until the 4th moment. To create a proficient model we estimated the test error performance of various different degrees of polynomials and splines with various combinations of degrees of freedom. An example is shown in the graph below of the process looking at the difference in LOOCV MAE between different numbers of knots for a quadratic spline model.
 
 ```{r}
 RMSLE = function(y_true, y_pred) sqrt(mean((log(y_true + 1) - log(y_pred + 1))^2))
@@ -55,11 +55,9 @@ plot(2:10, errors[-1], type="b", xlab="DF", ylab="Mean Absolute error",
      main = 'LOOCV MAE vs Degrees of Freedom with Degree = 2 Splines')
 abline(v = which.min(errors), col = "red")
 ```
-Notably, the simplest model has won out. The next step in our process was to identify possible interaction terms. We started with a very complex model with a complete set of interactions terms, which included triple interaction terms across the three predictors, and included log, square root, and inverse terms. We then performed backwards model selection using LOOCV, MSE, and MAE to select predictors and all metrics agreed on the following models for both the first and second moments.
+Notably, the simplest model has won out. Then, the next step was to look at what kind of interactions we may need. To identify these interactions, we plotted the data and performed some exploratory data analysis.
 
 ```{r}
-#if we keep this i will add labels and such
-
 re_over = data.train %>%
   filter(Re == 90) %>%
   mutate(Fr = as.factor(Fr),
@@ -93,7 +91,9 @@ par(mfrow=c(2,2))
     geom_smooth(method = "lm", formula = "y ~ log(x)") +
     geom_point()
 ```
-To look at what kind of interactions we may need, we graphed the data. As we get to further moments, it becomes very clear that the majority of our error came from the much larger values all associated with an Re of 90 and an Fr of 0.052. These looked to follow a logarithmic path of St and when we applied that to all the interaction terms, we found our best model yet.
+As we get to further moments, it becomes very clear that the majority of our error came from the much larger values all associated with an Re of 90 and an Fr of 0.052. These looked to follow a logarithmic path of St and when we applied that to all the interaction terms, we found our best model yet.
+
+Our model selection process began with a very complex model containing a complete set of interactions terms, which included triple interaction terms across the three predictors (and abiding by the strong hierarchy principle all component interactions and main effects), and included log, square root, and inverse terms. We then performed backwards model selection using LOOCV, MSE, and MAE to select optimal predictors and all metrics agreed on the following models for both the first and second moments.
 
 ```{r}
 model_m1 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
