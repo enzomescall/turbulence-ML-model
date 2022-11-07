@@ -26,11 +26,17 @@ data.test = read.csv("data-test.csv")
 
 ## Introduction
 
+Turbulence has been described as “the last great unsolved problem in classical physics” by renowned physicist Richard Feynman. It has not only been crucial in mathematics but has important applications in astrophysics, climatology, and engineering.
 
+In this project, we explored the distribution and clustering of particles in an idealized turbulence (homogeneous isotropic turbulence or HIT) as affected by three independent predictors representing the properties of turbulent flow. Reynolds number (Re), Froude number (Fr), and Stokes number (St) quantify the fluid turbulence, gravitational acceleration, and particle characteristics, respectively. We used data from Direct Numerical Simulations (DNS) of Re, Fr, and St and their associated clusters produced, quantifying these distributions by their first 4 moments.
+
+The purpose of this paper was twofold: scientific inference and predictive modeling. Our final models described below will help scientists understand how each parameter influences the probability distribution function (PDF) of particle cluster volumes while also being able to predict the PDF for a new parameter setting of (Re, F r, St), in terms of its four raw moments. 
+
+For moment 1, we were able to find a generalized linear model incorporating the interaction of Fr and St values as factors and log(Re). This model balances the trade-off of complexity and interpretability, as it gives us a moderate predictive accuracy while being interpretable in the context of turbulence with respect to the available parameters.
 
 ## Methodology
 
-The first noticeable thing about the data is that despite both Fr and Re being numerical predictors, they only have three levels each. Therefore, we decided to treat them as discrete predictors instead of interpolating or extrapolating values outside the given set for Re ({90, 224, 398}) and Fr ({0.052, 0.3, Inf}). This transformation was appropriate in the context of the problem since the testing data would also have values within the specified sets only.
+The first noticeable thing about the data is that despite both Fr and Re being numerical predictors, they only have three levels each. Therefore, we decided to treat them as discrete predictors instead of interpolating or extrapolating values outside the given set for Re ($\{90, 224, 398\}$) and Fr ($\{0.052, 0.3, \infty\}$). This transformation was appropriate in the context of the problem since the testing data would also have values within the specified sets only. The caveat is that this analysis should not be directly used to understand other real-world problems like oceanic and atmospheric turbulent flow which have Re within the order of magnitude of $10^7$.
 
 ```{r}
 clean = data.train %>%

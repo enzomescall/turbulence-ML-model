@@ -131,4 +131,18 @@ predictive_model = function(test_St, test_Re, test_Fr) {
   
   return(c(m1, m2, m3, m4))
 }
+
+library(Metrics)
+library(boot)
+rmsle(c(12), c(20))
+
+model_m1 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
+
+cv.glm(clean,model_m1, cost = rmsle)$delta[1]
+
+RMSLE = function(y_true, y_pred) sqrt(mean((log(y_true + 1) - log(y_pred + 1))^2))
+
+cv.glm(clean,model_m1, cost = RMSLE)$delta[1]
+
 ```
+
