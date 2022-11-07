@@ -324,9 +324,20 @@ re_over_glm2 = glm(R_moment_2 ~ Fr + St + St*Fr + log(St)*Fr,
                    data = re_over)
 suppressWarnings(cv.glm(re_over_glm2, data = re_over)$delta[1])
 ```
+```{r}
+model_m1 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
+model_m2 = glm(R_moment_2 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
+```
+
+```{r}
+model_m1
+```
 
 
-## Results
+## Introduction
+
+An introduction outlining key research objectives and how your model achieves such objectives.
+
+In this project we explore the distribution and clustering of particles in an idealized turbulence as effected by Reynolds number (Re), Froude number (Fr), and Stokes number (St), which quantify the fluid turbulence, gravitational acceleration, and particle characteristics, respectively. Using data that simulated Re, Fr, and St and measured the produced clusters, quantifying them by their first 4 moments. We were able to find generalized linear model incorporating the interaction of factored Fr and St values and log(Re). This model gives us only moderate predicative accuracy but is very interpretable. 
 
 
-## Conclusion
