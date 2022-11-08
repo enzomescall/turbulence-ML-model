@@ -146,6 +146,8 @@ predictive_model = function(test_St, test_Re, test_Fr) {
 
 A results section discussing your predictive results (don’t forget uncertainty!), as well as insights on the scientific problem. You should also submit your predictions on the hold-out set in data-test.csv, in the form of a .csv file.
 
-Our final models had highly accurate predictions of the training set for moments 1 and 2 but got further from the true data into moments 3 and 4. 
+Our final models had highly accurate predictions of the training set for moments 1 and 2 but got further from the true data into moments 3 and 4. The model is more interpretable than a spline or other models may as the linearity allows us to look at coefficients for specific interactions and variables explicitly. However, there are a lot of interaction terms so the individual parameter effects are not obvious to see.
+
+One absence in our model is the NA values for the interactions of Fr = 0.3 and Re = 398. These do not have values in our data set because there is no data point with that value. Fortunately, there is not a data point with those values either in the test data so there will be no gaps in predicting this specific data. Generally, this is just one example of how this model may not be accurate to the real world situation as we are fitting off of a very small data set. 
 
 ## Conclusion
