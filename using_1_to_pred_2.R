@@ -15,7 +15,7 @@ cv.glm(data = clean, glmfit = lm1)$delta[1]
 predictions = clean
 predictions$pred_m1 = predict(lm1, predictions)
 
-lm2 = glm(R_moment_2 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
+lm2 = glm(R_moment_2 ~ abs(log(St)*Fr*Re + St*Fr*Re), data = clean)
 cv.glm(data = clean, glmfit = lm2)$delta[1]
 
 predictions$pred_m2 = predict(lm2, predictions)
