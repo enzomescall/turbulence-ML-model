@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE, echo = FALSE)
 
 # Report should be no more than 4 pages
 ```
@@ -45,8 +45,7 @@ Since we have relatively few data points, n = 89, we decided to rely on LOOCV fo
 
 We tackled this problem sequentially, first focusing on models that provide information about the 1st moment, and moving forward until the 4th moment. To create a proficient model we estimated the test error performance of various different degrees of polynomials and splines with various combinations of degrees of freedom. An example is shown in the graph below of the process looking at the difference in LOOCV MAE between different numbers of knots for a quadratic spline model.
 
-```{r fig.height=3, fig.width=6}
-RMSLE = function(y_true, y_pred) sqrt(mean((log(y_true + 1) - log(y_pred + 1))^2))
+```{r fig.height=2, fig.width=6}
 MAE = function(y_true, y_pred) mean(abs(y_true - y_pred))
 
 errors = rep(NA, 10)
@@ -117,15 +116,14 @@ Our model selection process began with a very complex model containing a complet
 Below we have the final models we derived. They are all similar in selections of predictors, which follows from a similar shape of functions observed in the exploratory data analysis. After running these models we make sure that all the moments are positive by applying `max(predict, 0)` since, according to the slides, the distribution should follow a log-normal distribution. 
 
 ```{r echo=TRUE}
-lm1 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = data.train)
+predictions = data.train
 
+lm1 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = data.train)
 lm2 = glm(R_moment_2 ~ log(St)*Fr*Re + St*Fr*Re, data = data.train)
 
-predictions = data.train
 predictions$moment_1 = predict(lm1, predictions)
 
 lm3 = glm(R_moment_3 ~ moment_1*Fr*Re, data = predictions)
-
 lm4 = glm(R_moment_4 ~ log(St)*Fr*Re, data = data.train)
 ```
 
@@ -133,9 +131,8 @@ Notably, the third moment uses our prediction for the first moment. We found tha
 
 ## Results
 
-```{r}
+```{r fig.height=5, fig.width=6}
 par(mfrow = c(2,2))
-
 plot(lm1)
 ```
 
@@ -151,4 +148,4 @@ Another absence in our model is the NA values for the interactions of Fr = 0.3 a
 
 A final error we had with our model is that we had a few values that our predictive model came out with negative values for the moments. Because the equations consist of only even degrees, the second and fourth moments cannot definitionally be negative so we gave them a lower bound of zero. The solution to this was discussed in the methodology, but to reiterate we chose to institute a lower bound at 0 for all moments due to the supposed log-normal nature of the distributions.
 
-A possible extension to these models would be to investigate 
+A possible extension to these models would be to further investigate 
