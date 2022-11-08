@@ -34,7 +34,14 @@ cv.glm(data = predictions, glmfit = lm4)$delta[1]
 
 predictions$pred_m4 = predict(lm4, predictions)
 
-predicted.test$moment_1 = abs(predict(lm1, predicted.test))
-predicted.test$moment_2 = abs(predict(lm2, predicted.test))
-predicted.test$moment_3 = abs(predict(lm3, predicted.test))
-predicted.test$moment_4 = abs(predict(lm4, predicted.test))
+predicted.test$moment_1 = predict(lm1, predicted.test)
+predicted.test$moment_2 = predict(lm2, predicted.test)
+predicted.test$moment_3 = predict(lm3, predicted.test)
+predicted.test$moment_4 = predict(lm4, predicted.test)
+
+
+predicted.test %>%
+  mutate(moment_1 = if_else(moment_1 < 0, 0, moment_1),
+         moment_2 = if_else(moment_2 < 0, 0, moment_2),
+         moment_3 = if_else(moment_3 < 0, 0, moment_3),
+         moment_4 = if_else(moment_4 < 0, 0, moment_4))
