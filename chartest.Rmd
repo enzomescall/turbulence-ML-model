@@ -17,6 +17,7 @@ library(tidyverse)
 library(ggplot2)
 library(splines)
 library(gam)
+library(boot)
 ```
 
 ```{r data}
@@ -267,7 +268,7 @@ re_under = data.train %>%
 
 ```{r}
 re_glm2 = glm(R_moment_3 ~ Fr + Re + St + St^2 + St^3 + St^4  + Re*log(St)*Fr, 
-                   data = clean) ##looks liek a cube but doesnt change shit
+                   data = clean) ##looks like a cube but doesnt change shit
 suppressWarnings(cv.glm(re_glm2, data = clean)$delta[1])
 
 re_glm2 = glm(R_moment_3 ~ Fr + Re  + Re*log(St)*Fr, 
@@ -331,6 +332,23 @@ model_m2 = glm(R_moment_2 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
 
 ```{r}
 model_m1
+summ(model_m2)
+```
+
+```{r}
+test = data.train %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re),
+         St = log(St))
+test_model = glm(R_moment_2 ~ St+ Fr+ Re + St*Fr*Re, 
+                   data = test)
+summary(test_model)
+cv.glm(test_model, data = test)$delta[1]
+```
+
+```{r}
+ggplot(data = clean
+       , aes(x = R_moment_2, y = R_moment_3, color = St)) + geom_point()
 ```
 
 
