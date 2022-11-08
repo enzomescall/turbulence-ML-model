@@ -106,10 +106,29 @@ st_re90_plus_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape =
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-plot_grid(st_re_fr_1_plot, st_re_fr_2_plot, st_re90_fr_2_plot, st_re90_plus_fr_2_plot)
+st_re_fr_3_plot <- ggplot(aes(x = St, y = R_moment_3, color = Re, shape = Fr), data = data.train) +
+  labs(title = "St factored by Re and Fr vs. 3rd Moment", x = "St", y = "3rd Moment") + 
+  theme(title = element_text(size = 6)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+st_re_fr_4_plot <- ggplot(aes(x = St, y = R_moment_4, color = Re, shape = Fr), data = data.train) +
+  labs(title = "St factored by Re and Fr vs. 4th Moment", x = "St", y = "4th Moment") + 
+  theme(title = element_text(size = 6)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+
+plot_grid(st_re_fr_1_plot, st_re_fr_2_plot, st_re_fr_3_plot, st_re_fr_4_plot)
+
 ```
 
 As we get to further moments, it becomes very clear that the majority of our error came from the much larger values all associated with an Re of 90 and an Fr of 0.052. These looked to follow a logarithmic path of St and when we applied that to all the interaction terms, we found our best model yet.
+
+```{r fig.height=2.5}
+plot_grid(st_re90_fr_2_plot, st_re90_plus_fr_2_plot)
+```
+
 
 Our model selection process began with a very complex model containing a complete set of interactions terms, which included triple interaction terms across the three predictors (and abiding by the strong hierarchy principle all component interactions and main effects), and included log, square root, and inverse terms. We then performed backwards model selection using LOOCV, MSE, and MAE to select optimal predictors and all metrics agreed on the following models for both the first and second moments.
 
@@ -131,10 +150,6 @@ Notably, the third moment uses our prediction for the first moment. We found tha
 
 ## Results
 
-```{r fig.height=5, fig.width=6}
-par(mfrow = c(2,2))
-plot(lm1)
-```
 
 Our final models had highly accurate predictions of the training set for moments 1 and 2 but got further from the true data into moments 3 and 4. The model is more interpretable than a spline or other models may as the linearity allows us to look at coefficients for specific interactions and variables explicitly. However, there are a lot of interaction terms so the individual parameter effects are not obvious to see.
 
@@ -143,6 +158,11 @@ The main scientific finding is that, generally as can be see in our graphs, ther
 ## Conclusion
 
 The most significant weakness in the project is that our final regression models all had rather poor model diagnostics. Analysing the residuals reveals a multidude of outliers, non-constant variance, and a relationship that is unlikely to be normal. However, this can all be rapidly fixed by re-fitting the models with identical predictors but fitting them to the natural log of the response variables. The reason we decided to rely on the former is because the log fit models have significantly higher MSE than their regular counterparts, ranging from a 14% increase for the first moment to a multiple order of magnitude increase for the later moments.
+
+```{r fig.height=4, fig.width=6}
+par(mfrow = c(2,2), mai = c(.4,.5,.5,.5))
+plot(lm1)
+```
 
 Another absence in our model is the NA values for the interactions of Fr = 0.3 and Re = 398. These do not have values in our data set because there is no data point with that value. Fortunately, there is not a data point with those values either in the test data so there will be no gaps in predicting this specific data. Generally, this is just one example of how this model may not be accurate to the real world situation as we are fitting off of a very small data set. This limitation is also due to the fact that we represented the Freude numbers and Reynolds numbers as factors in the model, which completely ignores the numerical difference between values when creating a model
 
