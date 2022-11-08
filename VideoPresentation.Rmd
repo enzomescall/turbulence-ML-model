@@ -1,0 +1,146 @@
+---
+title: "Predicting Turbulence Simulations"
+author: "Enzo Moraes Mescall, Martin Olarte, Charlotte Coudert"
+date: "2022-11-05"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, echo = FALSE)
+
+# Report should be no more than 4 pages
+```
+
+
+```{r libraries, echo = FALSE, results = FALSE, message = FALSE}
+library(tidyverse)
+library(splines)
+library(boot)
+library(cowplot)
+```
+
+```{r data}
+data.test = read.csv("data-test.csv")
+data.train = read.csv("data-train.csv") %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+```
+
+## Introduction
+
+Turbulence has been described as “the last great unsolved problem in classical physics” by renowned physicist Richard Feynman
+
+$$\frac{\partial \rho}{\partial t} + \overrightarrow{\nabla}\cdot(\rho\overrightarrow{u})=0$$
+
+$$\frac{\partial(\rho \overrightarrow{u})}{\partial t} + \overrightarrow{\nabla}\cdot[\rho\overline{\overline{u\otimes u}}] = -\overrightarrow{\nabla p} + \overrightarrow{\nabla}\cdot\overline{\overline{\tau}} + \rho\overrightarrow{f}$$
+$$\frac{\partial(\rho e)}{\partial t} + \overrightarrow{\nabla}\cdot((\rho e + p)\overrightarrow{u}) = \overrightarrow{\nabla}\cdot(\overline{\overline{\tau}}\cdot\overrightarrow{u}) + \rho\overrightarrow{f}\overrightarrow{u} + \overrightarrow{\nabla}\cdot(\overrightarrow{\dot{q}})+r$$
+
+
+## Initial EDA
+
+
+```{r}
+re_over = data.train %>%
+  filter(Re == 90) %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+
+re_under = data.train %>%
+  filter(Re != 90) %>%
+  mutate(Fr = as.factor(Fr),
+         Re = as.factor(Re))
+
+st_re_fr_1_plot <- ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr), data = data.train) +
+  labs(title = "St factored by Re and Fr vs. 1st Moment", x = "St", y = "1st Moment") + 
+  theme(title = element_text(size = 6)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+st_re_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = data.train) +
+  labs(title = "St factored by Re and Fr vs. 2nd Moment", x = "St", y = "2nd Moment") + 
+  theme(title = element_text(size = 6)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+st_re_fr_3_plot <- ggplot(aes(x = St, y = R_moment_3, color = Re, shape = Fr), data = data.train) +
+  labs(title = "St factored by Re and Fr vs. 3rd Moment", x = "St", y = "3rd Moment") + 
+  theme(title = element_text(size = 6)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+st_re_fr_4_plot <- ggplot(aes(x = St, y = R_moment_4, color = Re, shape = Fr), data = data.train) +
+  labs(title = "St factored by Re and Fr vs. 4th Moment", x = "St", y = "4th Moment") + 
+  theme(title = element_text(size = 6)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+plot_grid(st_re_fr_1_plot, st_re_fr_2_plot, st_re_fr_3_plot, st_re_fr_4_plot)
+```
+
+
+## Initial Issues
+
+Vast differences in orders of magnitude within the data
+
+```{r}
+st_re90_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_over) +
+  labs(title = "St factored by Fr vs. 2nd Moment", subtitle = "For Re = 90", x = "St", y = "2nd Moment") + 
+  theme(title = element_text(size = 6), plot.subtitle = element_text(size = 5)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+st_re90_plus_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_under) +
+  labs(title = "St factored by Fr vs. 2nd Moment", subtitle = "For Re > 90", x = "St", y = "2nd Moment") + 
+  theme(title = element_text(size = 6), plot.subtitle = element_text(size = 5)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+plot_grid(st_re90_fr_2_plot, st_re90_plus_fr_2_plot)
+```
+
+
+## Example: Model for the 4th raw moment
+
+```{r echo = FALSE}
+predictions = data.train
+
+lm1 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = data.train)
+lm2 = glm(R_moment_2 ~ log(St)*Fr*Re + St*Fr*Re, data = data.train)
+
+predictions$moment_1 = predict(lm1, predictions)
+
+lm3 = glm(R_moment_3 ~ moment_1*Fr*Re, data = predictions)
+lm4 = glm(R_moment_4 ~ log(St)*Fr*Re, data = data.train)
+
+lm4
+```
+
+## Model diagnostics
+
+```{r}
+par(mfrow = c(2,2), mai = c(.4,.5,.5,.5))
+plot(lm4)
+```
+
+## Model with logged response
+
+```{r}
+loglm4 = glm(log(R_moment_4) ~ log(St)*Fr*Re, data = data.train)
+
+loglm4
+```
+
+
+## Model diagnostics with logged response
+
+```{r}
+par(mfrow = c(2,2), mai = c(.4,.5,.5,.5))
+plot(loglm4)
+```
+
+## MSE difference
+
+```{r}
+data.frame()
+```
+
