@@ -51,8 +51,8 @@ MAE = function(y_true, y_pred) mean(abs(y_true - y_pred))
 
 errors = rep(NA, 10)
 for (i in 2:10) {
-  lm = glm(R_moment_1 ~ bs(St, df = i, degree = 2)*Re + Fr, data = clean)
-  errors[i] = suppressWarnings(cv.glm(clean, lm, cost = MAE)$delta[1])
+  lm = glm(R_moment_1 ~ bs(St, df = i, degree = 2)*Re + Fr, data = data.train)
+  errors[i] = suppressWarnings(cv.glm(data.train, lm, cost = MAE)$delta[1])
 }
 
 error_df <- data.frame(
@@ -83,13 +83,13 @@ re_under = data.train %>%
   mutate(Fr = as.factor(Fr),
          Re = as.factor(Re))
 
-st_re_fr_1_plot <- ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr), data = clean) +
+st_re_fr_1_plot <- ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr), data = data.train) +
   labs(title = "St factored by Re and Fr vs. 1st Moment", x = "St", y = "1st Moment") + 
   theme(title = element_text(size = 6)) +
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-st_re_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = clean) +
+st_re_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = data.train) +
   labs(title = "St factored by Re and Fr vs. 2nd Moment", x = "St", y = "2nd Moment") + 
   theme(title = element_text(size = 6)) +
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
