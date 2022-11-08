@@ -44,3 +44,5 @@ predicted.test = predicted.test %>%
          moment_2 = if_else(moment_2 < 0, 0, moment_2),
          moment_3 = if_else(moment_3 < 0, 0, moment_3),
          moment_4 = if_else(moment_4 < 0, 0, moment_4))
+
+write.csv(predicted.test,"inferencetest.csv", row.names = FALSE)
