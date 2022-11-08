@@ -197,3 +197,37 @@ all_errors_df %>%
   knitr::kable(col.names = c("Moment", "Regular MSE", "Log response MSE"), caption = "MSE difference between log and non-log models")
 ```
 
+## Results
+
+- Our final models had highly accurate predictions of the training set for moments 1 and 2 but got further from the true data into moments 3 and 4. 
+
+- The model is more interpretable than a spline or other models may as the linearity allows us to look at coefficients for specific interactions and variables explicitly.
+
+## Interpretations
+
+- The main scientific finding is that, generally as can be see in our graphs, there is a logarithmic relationship between Stokes number and each moment with its coefficient dependent on its values of Froude number and Reynolds number. 
+
+- All moments increase with St with the moments of Re = 90, the smallest Re, and Fr = 0.052, the smallest Fr, creating much largest moments of all degrees.
+
+- This means that, comparing these levels of Re and Fr, a smaller fluid turbulence and gravitational acceleration are correlated with larger particle clusters. For all interactions, cluster size increases logarithmically with Stokes, which quantifies particle density and size.
+
+## Limitations
+
+- The most significant weakness in the project is that our final regression models all had rather poor model diagnostics. Analyzing the residuals reveals a multitude of outliers, non-constant variance, and a relationship that is unlikely to be normal. 
+
+```{r fig.height=3, fig.width=6}
+par(mfrow = c(2,2), mai = c(.4,.5,.5,.5))
+plot(lm1)
+```
+
+## Limitations
+
+- However, this can all be rapidly fixed by re-fitting the models with identical predictors but fitting them to the natural log of the response variables.
+
+- The reason we decided to rely on the former is because the log fit models have significantly higher MSE than their regular counterparts, ranging from a 14% increase for the first moment to a multiple order of magnitude increase for the later moments.
+
+## Continuation
+
+- A possible extension to these models if we had more time would be to simulate more data. With this we could have more accurate prediction, a full model without NAs for the points we have currently nothing to train on, and enough to separate more training and testing data for fitting. 
+
+- Additionally, with more time and beyond the scope of this course, we would be interested to train a neural network to improve prediction on the test set.
