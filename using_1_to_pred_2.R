@@ -39,8 +39,7 @@ predicted.test$moment_2 = predict(lm2, predicted.test)
 predicted.test$moment_3 = predict(lm3, predicted.test)
 predicted.test$moment_4 = predict(lm4, predicted.test)
 
-
-predicted.test %>%
+predicted.test = predicted.test %>%
   mutate(moment_1 = if_else(moment_1 < 0, 0, moment_1),
          moment_2 = if_else(moment_2 < 0, 0, moment_2),
          moment_3 = if_else(moment_3 < 0, 0, moment_3),
