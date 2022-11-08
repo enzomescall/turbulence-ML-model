@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 
 # Report should be no more than 4 pages
 ```
@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(splines)
 library(boot)
+library(cowplot)
 ```
 
 ```{r data}
@@ -61,6 +62,7 @@ plot(2:10, errors[-1], type="b", xlab="DF", ylab="Mean Absolute error",
      main = 'LOOCV MAE vs Degrees of Freedom with Degree = 2 Splines')
 abline(v = which.min(errors), col = "red")
 ```
+
 Notably, the simplest model has won out. Then, the next step was to look at what kind of interactions we may need. To identify these interactions, we plotted the data and performed some exploratory data analysis.
 
 ```{r}
@@ -74,29 +76,33 @@ re_under = data.train %>%
   mutate(Fr = as.factor(Fr),
          Re = as.factor(Re))
 
-
-par(mfrow=c(2,2))
-
-  ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr), data = clean) +
+st_re_fr_1_plot <- ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr), data = clean) +
   labs(title = "St factored by Re and Fr vs. 1st Moment", x = "St", y = "1st Moment") + 
+  theme(title = element_text(size = 6)) +
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = clean) +
+st_re_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = clean) +
   labs(title = "St factored by Re and Fr vs. 2nd Moment", x = "St", y = "2nd Moment") + 
+  theme(title = element_text(size = 6)) +
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_over) +
+st_re90_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_over) +
   labs(title = "St factored by Fr vs. 2nd Moment", subtitle = "For Re = 90", x = "St", y = "2nd Moment") + 
+  theme(title = element_text(size = 6), plot.subtitle = element_text(size = 5)) +
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_under) +
+st_re90_plus_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_under) +
   labs(title = "St factored by Fr vs. 2nd Moment", subtitle = "For Re > 90", x = "St", y = "2nd Moment") + 
-    geom_smooth(method = "lm", formula = "y ~ log(x)") +
-    geom_point()
+  theme(title = element_text(size = 6), plot.subtitle = element_text(size = 5)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+plot_grid(st_re_fr_1_plot, st_re_fr_2_plot, st_re90_fr_2_plot, st_re90_plus_fr_2_plot)
 ```
+
 As we get to further moments, it becomes very clear that the majority of our error came from the much larger values all associated with an Re of 90 and an Fr of 0.052. These looked to follow a logarithmic path of St and when we applied that to all the interaction terms, we found our best model yet.
 
 Our model selection process began with a very complex model containing a complete set of interactions terms, which included triple interaction terms across the three predictors (and abiding by the strong hierarchy principle all component interactions and main effects), and included log, square root, and inverse terms. We then performed backwards model selection using LOOCV, MSE, and MAE to select optimal predictors and all metrics agreed on the following models for both the first and second moments.
