@@ -348,7 +348,7 @@ cv.glm(test_model, data = test)$delta[1]
 
 ```{r}
 ggplot(data = clean
-       , aes(x = R_moment_2, y = R_moment_3, color = St)) + geom_point()
+       , aes(x = R_moment_3, y = R_moment_4, color = Fr)) + geom_point()
 ```
 
 

@@ -25,7 +25,11 @@ cv.glm(data = predictions, glmfit = lm3)$delta[1]
 
 predictions$pred_m3 = predict(lm3, predictions)
 
-lm4 = glm(R_moment_4 ~ log(St)*Fr*Re, data = predictions)
+lm4 = glm(log(R_moment_4) ~ log(St)*Fr*Re, data = predictions)
 cv.glm(data = predictions, glmfit = lm4)$delta[1]
 
-predictions$pred_m4 = predict(lm4, predictions)
+predictions$pred_m4 = exp(predict(lm4, predictions))
+
+predictions$diff2 = abs(predictions$R_moment_4 - predictions$pred_m4)
+
+plot(lm3)
