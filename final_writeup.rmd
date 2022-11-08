@@ -141,10 +141,14 @@ plot(lm1)
 
 Our final models had highly accurate predictions of the training set for moments 1 and 2 but got further from the true data into moments 3 and 4. The model is more interpretable than a spline or other models may as the linearity allows us to look at coefficients for specific interactions and variables explicitly. However, there are a lot of interaction terms so the individual parameter effects are not obvious to see.
 
+Generally, as can be see in our graphs, there is a logarithmic relationship between St and each moment with its coefficient dependent on its values of Fr and Re. All moments increase with St with the moments of Re = 90, the smallest Re, and Fr = 0.052, the smallest Fr, creating much largest moments of all degrees. This means that, comparing these levels of Re and Fr, a smaller fluid turbulence and gravitational acceleration are correlated with larger particle clusters. For all interactions, cluster size increases logarithmically with Stokes, which quantifies particle density and size.
+
 One absence in our model is the NA values for the interactions of Fr = 0.3 and Re = 398. These do not have values in our data set because there is no data point with that value. Fortunately, there is not a data point with those values either in the test data so there will be no gaps in predicting this specific data. Generally, this is just one example of how this model may not be accurate to the real world situation as we are fitting off of a very small data set. 
 
-## Conclusion
+A final error we had with our model is that we had a few values that our predictive model came out with negative values for the moments. Because the equations consist of only even degrees, the second and fourth moments cannot definitionally be negative so we gave them a lower bound of zero.
 
+
+## Conclusion
 
 
 The most significant weakness in the project is that our final regression models all had rather poor model diagnostics. Analysing the residuals reveals a multidude of outliers, non-constant variance, and a relationship that is unlikely to be normal. However, this can all be rapidly fixed by re-fitting the models with identical predictors but fitting them to the natural log of the response variables. The reason we decided to rely on 
