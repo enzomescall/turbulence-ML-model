@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 
 # Report should be no more than 4 pages
 ```
@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(splines)
 library(boot)
+library(cowplot)
 ```
 
 ```{r data}
@@ -30,7 +31,7 @@ Turbulence has been described as “the last great unsolved problem in classical
 
 In this project, we explored the distribution and clustering of particles in an idealized turbulence (homogeneous isotropic turbulence or HIT) as affected by three independent predictors representing the properties of turbulent flow. Reynolds number (Re), Froude number (Fr), and Stokes number (St) quantify the fluid turbulence, gravitational acceleration, and particle characteristics, respectively. We used data from Direct Numerical Simulations (DNS) of Re, Fr, and St and their associated clusters produced, quantifying these distributions by their first 4 moments.
 
-The purpose of this paper was twofold: scientific inference and predictive modeling. Our final models described below will help scientists understand how each parameter influences the probability distribution function (PDF) of particle cluster volumes while also being able to predict the PDF for a new parameter setting of (Re, F r, St), in terms of its four raw moments. 
+The purpose of this paper was twofold: scientific inference and predictive modeling. Our final models described below will help scientists understand how each parameter influences the probability distribution function (PDF) of particle cluster volumes while also being able to predict the PDF for a new parameter setting of (Re, Fr, St), in terms of its four raw moments. 
 
 For moment 1, we were able to find a generalized linear model incorporating the interaction of Fr and St values as factors and log(Re). This model balances the trade-off of complexity and interpretability, as it gives us a moderate predictive accuracy while being interpretable in the context of turbulence with respect to the available parameters.
 
@@ -48,7 +49,7 @@ Since we have relatively few data points, n = 89, we decided to rely on LOOCV fo
 
 We tackled this problem sequentially, first focusing on models that provide information about the 1st moment, and moving forward until the 4th moment. To create a proficient model we estimated the test error performance of various different degrees of polynomials and splines with various combinations of degrees of freedom. An example is shown in the graph below of the process looking at the difference in LOOCV MAE between different numbers of knots for a quadratic spline model.
 
-```{r}
+```{r fig.height=3, fig.width=6}
 RMSLE = function(y_true, y_pred) sqrt(mean((log(y_true + 1) - log(y_pred + 1))^2))
 MAE = function(y_true, y_pred) mean(abs(y_true - y_pred))
 
@@ -57,11 +58,25 @@ for (i in 2:10) {
   lm = glm(R_moment_1 ~ bs(St, df = i, degree = 2)*Re + Fr, data = clean)
   errors[i] = suppressWarnings(cv.glm(clean, lm, cost = MAE)$delta[1])
 }
-plot(2:10, errors[-1], type="b", xlab="DF", ylab="Mean Absolute error", 
-     main = 'LOOCV MAE vs Degrees of Freedom with Degree = 2 Splines')
-abline(v = which.min(errors), col = "red")
+
+error_df <- data.frame(
+  df = 2:10,
+  errors = errors[-1]
+)
+error_df %>%
+  ggplot(aes(x = df, y = errors)) +
+  labs(title = "LOOCV MAE vs. Degrees of Freedom with Degree = 2 Splines", x = "DF", y = "Mean Absolute Error") +
+  geom_line() +
+  geom_point() +
+  geom_vline(aes(xintercept = 2, col = "red")) +
+  theme(legend.position = "none")
 ```
+
+
+
 Notably, the simplest model has won out. Then, the next step was to look at what kind of interactions we may need. To identify these interactions, we plotted the data and performed some exploratory data analysis.
+
+
 
 ```{r}
 re_over = data.train %>%
@@ -74,51 +89,54 @@ re_under = data.train %>%
   mutate(Fr = as.factor(Fr),
          Re = as.factor(Re))
 
-
-par(mfrow=c(2,2))
-
-  ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr), data = clean) +
+st_re_fr_1_plot <- ggplot(aes(x = St, y = R_moment_1, color = Re, shape = Fr), data = clean) +
   labs(title = "St factored by Re and Fr vs. 1st Moment", x = "St", y = "1st Moment") + 
+  theme(title = element_text(size = 6)) +
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = clean) +
+st_re_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = clean) +
   labs(title = "St factored by Re and Fr vs. 2nd Moment", x = "St", y = "2nd Moment") + 
+  theme(title = element_text(size = 6)) +
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_over) +
+st_re90_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_over) +
   labs(title = "St factored by Fr vs. 2nd Moment", subtitle = "For Re = 90", x = "St", y = "2nd Moment") + 
+  theme(title = element_text(size = 6), plot.subtitle = element_text(size = 5)) +
   geom_smooth(method = "lm", formula = "y ~ log(x)") +
   geom_point()
 
-  ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_under) +
+st_re90_plus_fr_2_plot <- ggplot(aes(x = St, y = R_moment_2, color = Re, shape = Fr), data = re_under) +
   labs(title = "St factored by Fr vs. 2nd Moment", subtitle = "For Re > 90", x = "St", y = "2nd Moment") + 
-    geom_smooth(method = "lm", formula = "y ~ log(x)") +
-    geom_point()
+  theme(title = element_text(size = 6), plot.subtitle = element_text(size = 5)) +
+  geom_smooth(method = "lm", formula = "y ~ log(x)") +
+  geom_point()
+
+plot_grid(st_re_fr_1_plot, st_re_fr_2_plot, st_re90_fr_2_plot, st_re90_plus_fr_2_plot)
 ```
+
 As we get to further moments, it becomes very clear that the majority of our error came from the much larger values all associated with an Re of 90 and an Fr of 0.052. These looked to follow a logarithmic path of St and when we applied that to all the interaction terms, we found our best model yet.
 
 Our model selection process began with a very complex model containing a complete set of interactions terms, which included triple interaction terms across the three predictors (and abiding by the strong hierarchy principle all component interactions and main effects), and included log, square root, and inverse terms. We then performed backwards model selection using LOOCV, MSE, and MAE to select optimal predictors and all metrics agreed on the following models for both the first and second moments.
 
-```{r}
+```{r echo=TRUE}
 model_m1 = glm(R_moment_1 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
 model_m2 = glm(R_moment_2 ~ log(St)*Fr*Re + St*Fr*Re, data = clean)
 ```
 
 After this, we created a function that would resemble our final product and take in a tuple of St, Re, and Fr and then return the four predicted moments. We reserved the global variable names `model_mX` for this final function.
 
-```{r}
-# temp models
+```{r echo=TRUE}
 predictive_model = function(test_St, test_Re, test_Fr) {
   newdata = data.frame(list(St = test_St, 
                             Re = as.factor(test_Re), 
                             Fr = as.factor(test_Fr)))
   
-  m1 = predict(model_m1, newdata =  newdata)
-  m2 = predict(model_m2, newdata =  newdata)
-  m3 = predict(model_m3, newdata =  newdata)
-  m4 = predict(model_m4, newdata =  newdata)
+  m1 = predict(model_m1, newdata =  newdata, se.fit = TRUE)
+  m2 = predict(model_m2, newdata =  newdata, se.fit = TRUE)
+  m3 = predict(model_m3, newdata =  newdata, se.fit = TRUE)
+  m4 = predict(model_m4, newdata =  newdata, se.fit = TRUE)
   
   return(c(m1, m2, m3, m4))
 }
